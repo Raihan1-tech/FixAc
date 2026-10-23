@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AeroLedger ERP — HVAC Field Service, HR Lifecycle & Double-Entry Accounting Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    canvas.sig-pad { touch-action: none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="sticky top-0 z-40 bg-slate-900 text-white border-b border-slate-800 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-extrabold text-slate-950 shadow">
+          AC
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-base tracking-tight">AeroLedger HVAC ERP</span>
+            <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+              DECIMAL(18,4) • ACID
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Field Service Management • HR Payroll • Double-Entry General Ledger</p>
+        </div>
+      </div>
+
+      <!-- Role Switcher & Auth Controls -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <div id="roleBadgeContainer" class="flex items-center gap-2"></div>
+        <button id="btnNavBooking" onclick="switchPortalView('PUBLIC')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          Portal Booking Pelanggan
+        </button>
+        <button id="btnNavTech" onclick="quickLogin('user','user')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition">
+          Teknisi (user/user)
+        </button>
+        <button id="btnNavAdmin" onclick="quickLogin('admin','admin')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition">
+          Admin & Finance (admin/admin)
+        </button>
+        <button id="btnStaffLogin" onclick="openLoginModal()" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow transition">
+          Staff / Admin Login
+        </button>
+        <button id="btnLogout" onclick="handleLogout()" class="hidden px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition">
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none"></div>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- =================================================================== -->
+    <!-- 1. PUBLIC CUSTOMER BOOKING & LANDING PORTAL                         -->
+    <!-- =================================================================== -->
+    <section id="viewPublic" class="space-y-6">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-2xl p-6 sm:p-8 text-white shadow-xl border border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div class="space-y-2 max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+            Layanan Resmi HVAC & Tata Udara Terintegrasi Buku Besar
+          </span>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            Booking Teknisi AC Profesional & Pemeliharaan Terjadwal
+          </h1>
+          <p class="text-slate-300 text-sm">
+            Setiap tiket pekerjaan dilacak secara real-time mulai dari diagnosa tekanan PSI & Ampere, pemakaian freon/sparepart, tanda tangan digital pelanggan, hingga pencatatan akuntansi berpasangan (Double-Entry).
+          </p>
+        </div>
+        <div class="bg-slate-950/60 border border-slate-700 rounded-xl p-4 text-xs space-y-1.5 w-full lg:w-72">
+          <div class="font-bold text-slate-200 uppercase tracking-wider">Kredensial Demo Pengujian</div>
+          <div class="flex justify-between text-slate-400"><span>Teknisi Lapangan:</span><code class="text-cyan-300 font-mono">user / user</code></div>
+          <div class="flex justify-between text-slate-400"><span>Admin & Finance:</span><code class="text-amber-300 font-mono">admin / admin</code></div>
+        </div>
+      </div>
+
+      <!-- Multi-Step Booking Form -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4 mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Formulir Pemesanan Layanan AC (Multi-Step)</h2>
+            <p class="text-xs text-slate-500">Isi spesifikasi unit & keluhan untuk penjadwalan teknisi otomatis</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-semibold">
+            <span id="stepIndicator1" class="px-2.5 py-1 rounded-full bg-blue-600 text-white">1. Data Klien</span>
+            <span id="stepIndicator2" class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">2. Spesifikasi AC</span>
+            <span id="stepIndicator3" class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">3. Keluhan & Layanan</span>
+          </div>
+        </div>
+
+        <form id="publicBookingForm" onsubmit="submitPublicBooking(event)" class="space-y-6">
+          <!-- STEP 1: CLIENT DETAILS -->
+          <div id="bookingStep1" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Kontak (Contact Person) *</label>
+              <input id="bkClientName" required placeholder="Contoh: Bpk. Hendra Wijaya" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Telepon / WhatsApp *</label>
+              <input id="bkClientPhone" required placeholder="Contoh: 0812-8899-7766" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Alamat Lengkap Lokasi *</label>
+              <input id="bkClientAddress" required placeholder="Jl. Sudirman Kav. 45, Kebayoran Baru, Jakarta Selatan" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Lokasi Ruangan AC (AC Room Location) *</label>
+              <input id="bkRoomLocation" required placeholder="Contoh: Ruang Server Lt. 2 / Kamar Utama" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div class="md:col-span-2 flex justify-end">
+              <button type="button" onclick="goBookingStep(2)" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
+                Lanjut ke Spesifikasi AC →
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 2: AC SPECIFICATIONS -->
+          <div id="bookingStep2" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Brand / Merk AC *</label>
+              <select id="bkAcBrand" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+                <option value="Daikin">Daikin</option>
+                <option value="Panasonic">Panasonic</option>
+                <option value="Mitsubishi Heavy">Mitsubishi Heavy</option>
+                <option value="LG">LG</option>
+                <option value="Sharp">Sharp</option>
+                <option value="Gree">Gree</option>
+                <option value="Samsung">Samsung</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Kapasitas PK (PK Capacity) *</label>
+              <select id="bkAcPk" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+                <option value="0.5 PK">0.5 PK</option>
+                <option value="1 PK" selected>1 PK</option>
+                <option value="1.5 PK">1.5 PK</option>
+                <option value="2 PK">2 PK</option>
+                <option value="2.5 PK Cassette">2.5 PK (Cassette / Standing)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Model / Tipe Unit *</label>
+              <select id="bkAcModel" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+                <option value="Inverter">Split Wall Inverter</option>
+                <option value="Standard">Split Wall Standard</option>
+                <option value="Low Watt">Split Wall Low Watt</option>
+                <option value="Cassette VRV">Ceiling Cassette / VRV</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Tipe Refrigerant / Freon *</label>
+              <select id="bkAcFreon" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-mono">
+                <option value="R32">R32 (Eco High Efficiency)</option>
+                <option value="R410A">R410A (Inverter Puron)</option>
+                <option value="R22">R22 (Legacy HCFC)</option>
+              </select>
+            </div>
+            <div class="md:col-span-2 flex justify-between pt-2">
+              <button type="button" onclick="goBookingStep(1)" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700">
+                ← Kembali
+              </button>
+              <button type="button" onclick="goBookingStep(3)" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
+                Lanjut ke Keluhan & Layanan →
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 3: SYMPTOMS & REQUESTED SERVICES -->
+          <div id="bookingStep3" class="hidden space-y-5">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                Keluhan / Gejala AC (Pilih semua yang sesuai)
+              </label>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 text-xs">
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkSymptom" value="Tidak Dingin" checked class="rounded text-blue-600" />
+                  <span>Tidak Dingin</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkSymptom" value="Mati Total" class="rounded text-blue-600" />
+                  <span>Mati Total</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkSymptom" value="Bocor Air" class="rounded text-blue-600" />
+                  <span>Bocor Air</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkSymptom" value="Suara Bising" class="rounded text-blue-600" />
+                  <span>Suara Bising</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkSymptom" value="Lainnya" class="rounded text-blue-600" />
+                  <span>Lainnya</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                Layanan yang Diminta (Requested Services)
+              </label>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkService" value="Pengecekan" class="rounded text-blue-600" />
+                  <span>Pengecekan</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkService" value="Service/Cuci" checked class="rounded text-blue-600" />
+                  <span>Service / Cuci</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkService" value="Tambah Freon" checked class="rounded text-blue-600" />
+                  <span>Tambah Freon</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkService" value="Isi Refrigerant Full" class="rounded text-blue-600" />
+                  <span>Isi Refrigerant Full</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkService" value="Bongkar" class="rounded text-blue-600" />
+                  <span>Bongkar</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkService" value="Pasang" class="rounded text-blue-600" />
+                  <span>Pasang</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkService" value="Relokasi/Bongkar-Pasang" class="rounded text-blue-600" />
+                  <span>Relokasi / Bongkar-Pasang</span>
+                </label>
+                <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="bkService" value="Perbaikan Sparepart" class="rounded text-blue-600" />
+                  <span>Perbaikan Sparepart</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex justify-between pt-2">
+              <button type="button" onclick="goBookingStep(2)" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700">
+                ← Kembali
+              </button>
+              <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow">
+                Kirim Tiket Pemesanan Layanan AC
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- 2. TECHNICIAN / FIELD STAFF WORKSPACE (user / user)                 -->
+    <!-- =================================================================== -->
+    <section id="viewTechnician" class="hidden space-y-6">
+      <div class="bg-slate-900 text-white rounded-2xl p-5 flex flex-wrap justify-between items-center gap-4">
+        <div>
+          <span class="text-xs font-mono uppercase text-cyan-400">Field Service Execution Workspace</span>
+          <h2 class="text-xl font-bold">Dashboard Teknisi Lapangan — <span id="techActiveName">Budi Santoso</span></h2>
+          <p class="text-xs text-slate-400">Pilih tiket kerja untuk mengisi checklist teknis, rincian biaya sparepart/jasa, dan tanda tangan pelanggan.</p>
+        </div>
+        <div class="flex gap-3 text-xs">
+          <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700">
+            <div class="text-slate-400">Skema Komisi Anda</div>
+            <div class="font-mono font-bold text-cyan-300 text-sm">20.0000% Jasa Service</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Assigned Ticket Queue -->
+        <div class="lg:col-span-4 space-y-3">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-600">Daftar Tiket Tugas (Assigned Jobs)</h3>
+          <div id="techOrderList" class="space-y-3"></div>
+        </div>
+
+        <!-- Active Inspection & Dynamic Invoice Builder -->
+        <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+          <div class="flex flex-wrap justify-between items-start gap-2 border-b pb-4">
+            <div>
+              <span id="activeOrderBadge" class="text-xs font-mono font-bold px-2.5 py-1 rounded bg-blue-100 text-blue-800">ORD-202610-0002</span>
+              <h3 id="activeOrderTitle" class="text-lg font-bold text-slate-900 mt-1">Memuat Tiket...</h3>
+              <p id="activeOrderMeta" class="text-xs text-slate-500"></p>
+            </div>
+            <div id="activeOrderStatusPill"></div>
+          </div>
+
+          <!-- Interactive Indoor & Outdoor Inspection Checklists -->
+          <div>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
+              A. Checklist Pemeriksaan Teknis (Indoor & Outdoor Unit)
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Arus Listrik / Amperage (A)</label>
+                <input id="inspAmpere" type="number" step="0.1" value="4.2" class="w-full border rounded-lg px-3 py-2 font-mono" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Tekanan Freon / Pressure (PSI)</label>
+                <input id="inspPsi" type="number" step="1" value="145" class="w-full border rounded-lg px-3 py-2 font-mono" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Kebersihan Evaporator (Indoor)</label>
+                <select id="inspEvap" class="w-full border rounded-lg px-3 py-2">
+                  <option value="DIRTY_CLEANED">Kotor — Sudah Dicuci Bersih</option>
+                  <option value="CLEAN">Bersih Normal</option>
+                  <option value="CORRODED_NEEDS_REPLACE">Korosi / Bocor</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Saluran Pembuangan (Drain Line)</label>
+                <select id="inspDrain" class="w-full border rounded-lg px-3 py-2">
+                  <option value="CLOGGED_FLUSHED">Mampet — Sudah Ditembak Vakum</option>
+                  <option value="CLEAR">Lancar Normal</option>
+                  <option value="LEAKING_REPAIRED">Bocor — Sudah Diperbaiki</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Motor Fan Outdoor</label>
+                <select id="inspFan" class="w-full border rounded-lg px-3 py-2">
+                  <option value="NORMAL">Putaran Normal (RPM Stabil)</option>
+                  <option value="WEAK">Lemah / Bising</option>
+                  <option value="FAULTY_REPLACED">Rusak — Diganti Baru</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-600 mb-1">Kondisi Kapasitor Kompresor</label>
+                <select id="inspCap" class="w-full border rounded-lg px-3 py-2">
+                  <option value="GOOD">Baik (Mikrofarad Sesuai)</option>
+                  <option value="WEAK_REPLACED">Lemah — Diganti Baru</option>
+                  <option value="BLOWN_REPLACED">Melembung/Mati — Diganti</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Invoice Builder -->
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">
+                B. Dynamic Invoice Builder (Jasa Service & Sparepart)
+              </h4>
+              <button type="button" onclick="addTechInvoiceLine()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800">
+                + Tambah Item Tagihan
+              </button>
+            </div>
+            <div class="overflow-x-auto border rounded-xl">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-100 text-slate-600 uppercase">
+                  <tr>
+                    <th class="p-2.5">Kategori</th>
+                    <th class="p-2.5">Deskripsi Pekerjaan / Material</th>
+                    <th class="p-2.5 text-right">Qty</th>
+                    <th class="p-2.5 text-right">Harga Jual (IDR)</th>
+                    <th class="p-2.5 text-right">HPP Gudang (IDR)</th>
+                    <th class="p-2.5 text-right">Subtotal (IDR)</th>
+                    <th class="p-2.5"></th>
+                  </tr>
+                </thead>
+                <tbody id="techInvoiceLinesBody" class="divide-y"></tbody>
+              </table>
+            </div>
+            <div class="mt-3 bg-slate-50 rounded-xl p-4 border flex flex-wrap justify-between items-center gap-4 text-xs">
+              <div class="space-y-1">
+                <div>Jasa Labor (Akun 4110): <span id="lblTechLabor" class="font-mono font-semibold">Rp 0.0000</span></div>
+                <div>Sparepart & Freon (Akun 4120): <span id="lblTechParts" class="font-mono font-semibold">Rp 0.0000</span></div>
+                <div>Estimasi Komisi Teknisi (Akun 5120/2120): <span id="lblTechCommission" class="font-mono font-semibold text-blue-700">Rp 0.0000</span></div>
+              </div>
+              <div class="text-right">
+                <div class="text-slate-500">Grand Total Tagihan Pelanggan</div>
+                <div id="lblTechGrandTotal" class="text-xl font-extrabold font-mono text-emerald-700">Rp 0.0000</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-2 border-t">
+            <button id="btnOpenSignModal" onclick="openSignatureModal()" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg transition">
+              Tandai Selesai & Minta Persetujuan (Digital Sign-Off)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- 3. ADMIN & FINANCE ERP DASHBOARD (admin / admin)                    -->
+    <!-- =================================================================== -->
+    <section id="viewAdmin" class="hidden space-y-6">
+      <!-- Sub-navigation Tabs -->
+      <div class="bg-white rounded-2xl p-2 shadow-sm border border-slate-200 flex flex-wrap gap-2">
+        <button onclick="switchAdminTab('OVERVIEW')" id="admTabOVERVIEW" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white">
+          1. Executive KPI & Maker-Checker Queue
+        </button>
+        <button onclick="switchAdminTab('LEDGER')" id="admTabLEDGER" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">
+          2. General Ledger & Reversing Entries
+        </button>
+        <button onclick="switchAdminTab('REPORTS')" id="admTabREPORTS" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">
+          3. Laporan Keuangan (Laba Rugi • Neraca • Arus Kas)
+        </button>
+        <button onclick="switchAdminTab('HR')" id="admTabHR" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">
+          4. HR Employee & Payroll GL Management
+        </button>
+        <button onclick="switchAdminTab('AUDIT')" id="admTabAUDIT" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">
+          5. Immutable Audit Logs (SHA-256)
+        </button>
+      </div>
+
+      <!-- TAB 1: EXECUTIVE OVERVIEW & MAKER-CHECKER WORKFLOW -->
+      <div id="adminSectionOVERVIEW" class="space-y-6">
+        <div id="kpiCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Maker-Checker Queue -->
+          <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="text-[11px] font-mono uppercase text-amber-600 font-bold">Governance • Separation of Duties</span>
+                <h3 class="text-base font-bold text-slate-900">Antrean Maker-Checker (Menunggu Otorisasi Posting GL)</h3>
+              </div>
+            </div>
+            <div id="makerCheckerList" class="space-y-3"></div>
+          </div>
+
+          <!-- Technician Productivity & Automated Wage/Commission Calculator -->
+          <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+            <div>
+              <span class="text-[11px] font-mono uppercase text-blue-600 font-bold">HR Sub-Ledger Analytics</span>
+              <h3 class="text-base font-bold text-slate-900">Produktivitas Teknisi & Kalkulator Gaji/Komisi</h3>
+            </div>
+            <div id="techProductivityList" class="space-y-4"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: GENERAL LEDGER & REVERSING ENTRIES -->
+      <div id="adminSectionLEDGER" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div class="flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Jurnal Umum Berpasangan (Double-Entry General Ledger)</h3>
+            <p class="text-xs text-slate-500">
+              Seluruh transaksi berstatus <code class="font-mono font-bold">POSTED</code> bersifat immutable (tidak dapat dihapus). Koreksi wajib menggunakan Jurnal Pembalik (<code class="font-mono">Reversing Entry</code>).
+            </p>
+          </div>
+          <div id="glZeroSumBadge" class="px-3 py-1.5 rounded-xl font-mono text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300"></div>
+        </div>
+        <div id="ledgerTransactionsContainer" class="space-y-4"></div>
+      </div>
+
+      <!-- TAB 3: REAL-TIME FINANCIAL STATEMENTS (LABA RUGI, NERACA, ARUS KAS) -->
+      <div id="adminSectionREPORTS" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Income Statement -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+            <div class="border-b pb-2">
+              <span class="text-[11px] font-mono uppercase text-blue-600 font-bold">Laporan Laba Rugi</span>
+              <h4 class="text-base font-bold">Income Statement (Periode 2026-10)</h4>
+            </div>
+            <div id="reportIncomeStatement" class="space-y-2 text-xs"></div>
+          </div>
+
+          <!-- Balance Sheet -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+            <div class="border-b pb-2 flex justify-between items-center">
+              <div>
+                <span class="text-[11px] font-mono uppercase text-emerald-600 font-bold">Laporan Posisi Keuangan</span>
+                <h4 class="text-base font-bold">Balance Sheet (Neraca)</h4>
+              </div>
+              <span id="bsEquationBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">Assets = L + E</span>
+            </div>
+            <div id="reportBalanceSheet" class="space-y-2 text-xs"></div>
+          </div>
+
+          <!-- Cash Flow Statement -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+            <div class="border-b pb-2">
+              <span class="text-[11px] font-mono uppercase text-purple-600 font-bold">Laporan Arus Kas</span>
+              <h4 class="text-base font-bold">Cash Flow Statement (Direct)</h4>
+            </div>
+            <div id="reportCashFlow" class="space-y-2 text-xs"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: EMPLOYEE & USER MANAGEMENT (HR MODULE) -->
+      <div id="adminSectionHR" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div class="flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Manajemen Pegawai, Teknisi & Skema Komisi (HR Module)</h3>
+            <p class="text-xs text-slate-500">Terhubung langsung dengan Chart of Accounts Beban Komisi (5120) & Utang Gaji/Komisi (2120).</p>
+          </div>
+          <div class="flex gap-2">
+            <select id="hrRoleFilter" onchange="renderHRTable()" class="border rounded-xl px-3 py-1.5 text-xs">
+              <option value="ALL">Semua Role</option>
+              <option value="TECHNICIAN">TECHNICIAN</option>
+              <option value="FINANCE">FINANCE</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+            <button onclick="openEmployeeModal()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow">
+              + Tambah Pegawai / Teknisi Baru
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto border rounded-xl">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-100 text-slate-600 uppercase">
+              <tr>
+                <th class="p-3">Kode & Nama</th>
+                <th class="p-3">Role & Spesialisasi</th>
+                <th class="p-3">Skema Gaji & Komisi</th>
+                <th class="p-3">Binding Akun GL</th>
+                <th class="p-3">Status</th>
+                <th class="p-3 text-right">Tindakan Governance</th>
+              </tr>
+            </thead>
+            <tbody id="hrEmployeesTableBody" class="divide-y"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 5: IMMUTABLE AUDIT LOGS -->
+      <div id="adminSectionAUDIT" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">Immutable Security & Financial Audit Trail</h3>
+          <p class="text-xs text-slate-500">Setiap event diikat dengan rantai hash SHA-256 dan dilindungi oleh trigger database append-only.</p>
+        </div>
+        <div class="overflow-x-auto border rounded-xl">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-900 text-slate-200 uppercase font-mono">
+              <tr>
+                <th class="p-3">Waktu (UTC+7)</th>
+                <th class="p-3">Actor & Role</th>
+                <th class="p-3">Action Event</th>
+                <th class="p-3">Entitas & Ringkasan State</th>
+                <th class="p-3">SHA-256 Chain Hash</th>
+              </tr>
+            </thead>
+            <tbody id="auditLogsTableBody" class="divide-y font-mono text-[11px]"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: STAFF / ADMIN LOGIN                                          -->
+  <!-- ===================================================================== -->
+  <div id="modalLogin" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-lg font-bold text-slate-900">Login Staf & Admin RBAC</h3>
+        <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+      <form onsubmit="submitLoginForm(event)" class="space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Username</label>
+          <input id="loginUsername" required placeholder="user atau admin" class="w-full border rounded-xl px-3.5 py-2 font-mono" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+          <input id="loginPassword" type="password" required placeholder="user atau admin" class="w-full border rounded-xl px-3.5 py-2 font-mono" />
+        </div>
+        <div class="bg-slate-50 p-3 rounded-xl border text-xs space-y-1">
+          <div class="font-semibold text-slate-700">Klik Cepat Kredensial Uji:</div>
+          <div class="flex gap-2 pt-1">
+            <button type="button" onclick="quickLogin('user','user')" class="px-2.5 py-1 rounded bg-cyan-100 text-cyan-900 font-mono font-semibold">user / user (Teknisi)</button>
+            <button type="button" onclick="quickLogin('admin','admin')" class="px-2.5 py-1 rounded bg-amber-100 text-amber-900 font-mono font-semibold">admin / admin (Admin/Finance)</button>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeLoginModal()" class="px-4 py-2 rounded-xl border text-xs font-semibold">Batal</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">Masuk Sesi RBAC</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: CUSTOMER DIGITAL SIGNATURE & COMPLETION                      -->
+  <!-- ===================================================================== -->
+  <div id="modalSignature" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <span class="text-[11px] font-mono uppercase text-blue-600 font-bold">Maker Sign-Off Step</span>
+          <h3 class="text-base font-bold text-slate-900">Tanda Tangan Digital Pelanggan & Sinkronisasi Akuntansi</h3>
+        </div>
+        <button onclick="closeSignatureModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nama Penerima / Penandatangan *</label>
+          <input id="sigClientNameInput" required class="w-full border rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="font-semibold text-slate-700">Goreskan Tanda Tangan di Bawah Ini:</span>
+            <button type="button" onclick="clearSigCanvas()" class="text-rose-600 font-semibold hover:underline">Hapus Kanvas</button>
+          </div>
+          <canvas id="sigCanvas" width="450" height="140" class="sig-pad w-full h-36 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 cursor-crosshair"></canvas>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeSignatureModal()" class="px-4 py-2 rounded-xl border text-xs font-semibold">Batal</button>
+        <button onclick="confirmTechnicianSignOff()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow">
+          Terbitkan Invoice & Kirim ke Checker Finance
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 3: HR EMPLOYEE ONBOARDING MODAL                                 -->
+  <!-- ===================================================================== -->
+  <div id="modalEmployee" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-base font-bold text-slate-900">Tambah Akun Staf / Teknisi & Binding COA Payroll</h3>
+        <button onclick="closeEmployeeModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+      <form onsubmit="submitNewEmployee(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="block font-semibold mb-1">Nama Lengkap *</label>
+          <input id="empFullName" required placeholder="Contoh: Rizky Pratama" class="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Email Korporat *</label>
+          <input id="empEmail" type="email" required placeholder="rizky@aeroledger.co.id" class="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Nomor Telepon *</label>
+          <input id="empPhone" required placeholder="0813-7788-9900" class="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Role RBAC *</label>
+          <select id="empRole" class="w-full border rounded-lg px-3 py-2">
+            <option value="TECHNICIAN">TECHNICIAN</option>
+            <option value="FINANCE">FINANCE</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Spesialisasi Keahlian *</label>
+          <input id="empSpec" required value="Inverter & Chiller Specialist" class="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Status Kepegawaian *</label>
+          <select id="empStatus" class="w-full border rounded-lg px-3 py-2">
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+            <option value="SUSPENDED">SUSPENDED</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Gaji Pokok (IDR) *</label>
+          <input id="empBaseSalary" type="number" value="4500000" required class="w-full border rounded-lg px-3 py-2 font-mono" />
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Skema Komisi *</label>
+          <select id="empCommScheme" class="w-full border rounded-lg px-3 py-2">
+            <option value="PERCENTAGE">PERCENTAGE (% dari Jasa Service)</option>
+            <option value="FLAT_RATE">FLAT_RATE (Tarif Tetap per Job)</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block font-semibold mb-1">Nilai Komisi (% atau Nominal Flat IDR) *</label>
+          <input id="empCommValue" type="number" step="0.5" value="20" required class="w-full border rounded-lg px-3 py-2 font-mono" />
+        </div>
+        <div class="sm:col-span-2 flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="closeEmployeeModal()" class="px-4 py-2 rounded-lg border font-semibold">Batal</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-blue-600 text-white font-bold">Provision Akun & Bind ke COA (5120/2120)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- CORE APPLICATION STATE & DOUBLE-ENTRY ENGINE (JAVASCRIPT)             -->
+  <!-- ===================================================================== -->
+  <script>
+    // Fixed-point DECIMAL(18, 4) formatter
+    function fmtDec(num) {
+      const n = Number(num || 0);
+      const parts = n.toFixed(4).split('.');
+      parts[0] = Number(parts[0]).toLocaleString('id-ID');
+      return 'Rp ' + parts[0] + '.' + parts[1];
+    }
+
+    // Standard Chart of Accounts
+    const COA = {
+      '1110': { name: 'Kas & Setara Kas (Bank BCA Operasional)', category: 'ASSET', normal: 'DEBIT', cf: 'CASH_EQUIVALENT' },
+      '1120': { name: 'Piutang Usaha Pelanggan (AR)', category: 'ASSET', normal: 'DEBIT', cf: 'OPERATING' },
+      '1130': { name: 'Persediaan Sparepart & Freon (Inventory)', category: 'ASSET', normal: 'DEBIT', cf: 'OPERATING' },
+      '1210': { name: 'Peralatan Kerja & Manifold Gauge Set', category: 'ASSET', normal: 'DEBIT', cf: 'INVESTING' },
+      '2110': { name: 'Utang Usaha Supplier Sparepart (AP)', category: 'LIABILITY', normal: 'CREDIT', cf: 'OPERATING' },
+      '2120': { name: 'Utang Komisi & Gaji Teknisi (Payroll Payable)', category: 'LIABILITY', normal: 'CREDIT', cf: 'OPERATING' },
+      '3110': { name: 'Modal Disetor Pemilik (Owner Capital)', category: 'EQUITY', normal: 'CREDIT', cf: 'FINANCING' },
+      '4110': { name: 'Pendapatan Jasa Service & Instalasi AC', category: 'REVENUE', normal: 'CREDIT', cf: 'OPERATING' },
+      '4120': { name: 'Pendapatan Penjualan Sparepart & Freon', category: 'REVENUE', normal: 'CREDIT', cf: 'OPERATING' },
+      '5110': { name: 'HPP Sparepart & Freon (COGS)', category: 'EXPENSE', normal: 'DEBIT', cf: 'OPERATING' },
+      '5120': { name: 'Beban Komisi & Insentif Teknisi', category: 'EXPENSE', normal: 'DEBIT', cf: 'OPERATING' },
+      '5210': { name: 'Beban Gaji Pokok & Operasional Kantor', category: 'EXPENSE', normal: 'DEBIT', cf: 'OPERATING' }
+    };
+
+    // Initial Seed State
+    const state = {
+      currentUser: null,
+      activeTechOrderId: 'ORD-202610-0002',
+      employees: [
+        {
+          id: 'EMP-01', code: 'EMP-2026-0001', username: 'admin', fullName: 'putri Maharani, CPA',
+          email: 'putri.finance@aeroledger.co.id', phone: '0811-2233-4455', role: 'ADMIN',
+          specialization: 'Financial Controller & Systems Admin', status: 'ACTIVE',
+          baseSalary: 9500000, commScheme: 'PERCENTAGE', commValue: 0, expAcct: '5210', payAcct: '2120'
+        },
+        {
+          id: 'EMP-02', code: 'EMP-2026-0002', username: 'user', fullName: 'Budi Santoso',
+          email: 'budi.tech@aeroledger.co.id', phone: '0812-9988-7766', role: 'TECHNICIAN',
+          specialization: 'Inverter & VRV/VRF Senior Specialist', status: 'ACTIVE',
+          baseSalary: 4800000, commScheme: 'PERCENTAGE', commValue: 20, expAcct: '5120', payAcct: '2120'
+        },
+        {
+          id: 'EMP-03', code: 'EMP-2026-0003', username: 'andi', fullName: 'Andi Wijaya',
+          email: 'andi.tech@aeroledger.co.id', phone: '0813-5544-3322', role: 'TECHNICIAN',
+          specialization: 'Split Wall & Cassette Installation', status: 'ACTIVE',
+          baseSalary: 4200000, commScheme: 'FLAT_RATE', commValue: 65000, expAcct: '5120', payAcct: '2120'
+        }
+      ],
+      orders: [
+        {
+          id: 'ORD-202610-0001',
+          invoiceNumber: 'INV-202610-0001',
+          clientName: 'PT Graha Teknologi Nusantara',
+          clientPhone: '021-5588990',
+          clientAddress: 'Menara Kuningan Lt. 12, Jakarta Selatan',
+          roomLocation: 'Ruang Server Utama',
+          acBrand: 'Daikin', acPk: '2 PK', acModel: 'Inverter', acFreon: 'R32',
+          symptoms: ['Tidak Dingin', 'Bocor Air'],
+          services: ['Service/Cuci', 'Tambah Freon', 'Perbaikan Sparepart'],
+          techId: 'EMP-02',
+          status: 'COMPLETED_POSTED',
+          inspection: { ampere: 6.1, psi: 150, evap: 'DIRTY_CLEANED', drain: 'CLOGGED_FLUSHED', fan: 'NORMAL', cap: 'WEAK_REPLACED' },
+          items: [
+            { type: 'SERVICE_LABOR', desc: 'Cuci Besar Overhaul & Vakum Drain AC 2 PK', qty: 1, price: 350000, cogs: 0 },
+            { type: 'REFRIGERANT_GAS', desc: 'Isi Tambah Refrigerant R32 Murni', qty: 1, price: 250000, cogs: 95000 },
+            { type: 'SPAREPART', desc: 'Penggantian Kapasitor Fan Outdoor 35uF', qty: 1, price: 180000, cogs: 75000 }
+          ],
+          signedBy: 'Bpk. Darmawan (IT Manager)',
+          makerUser: 'user'
+        },
+        {
+          id: 'ORD-202610-0002',
+          invoiceNumber: null,
+          clientName: 'Ibu Clarissa Halim',
+          clientPhone: '0812-3456-7890',
+          clientAddress: 'Jl. Senopati Dalam No. 18, Jakarta Selatan',
+          roomLocation: 'Master Bedroom Lantai 2',
+          acBrand: 'Panasonic', acPk: '1.5 PK', acModel: 'Inverter', acFreon: 'R32',
+          symptoms: ['Tidak Dingin', 'Suara Bising'],
+          services: ['Pengecekan', 'Service/Cuci', 'Tambah Freon'],
+          techId: 'EMP-02',
+          status: 'IN_PROGRESS',
+          inspection: { ampere: 4.2, psi: 145, evap: 'DIRTY_CLEANED', drain: 'CLOGGED_FLUSHED', fan: 'NORMAL', cap: 'GOOD' },
+          items: [
+            { type: 'SERVICE_LABOR', desc: 'Jasa Cuci & Maintenance AC Inverter 1.5 PK', qty: 1, price: 250000, cogs: 0 },
+            { type: 'REFRIGERANT_GAS', desc: 'Tambah Freon R32 Tekanan Standar 145 PSI', qty: 1, price: 200000, cogs: 70000 }
+          ],
+          signedBy: null,
+          makerUser: null
+        },
+        {
+          id: 'ORD-202610-0003',
+          invoiceNumber: 'INV-202610-0003',
+          clientName: 'Klinik Medika Sejahtera',
+          clientPhone: '0811-9000-2211',
+          clientAddress: 'Jl. Kemang Raya No. 88, Jakarta Selatan',
+          roomLocation: 'Ruang Laboratorium',
+          acBrand: 'Mitsubishi Heavy', acPk: '2 PK', acModel: 'Standard', acFreon: 'R410A',
+          symptoms: ['Mati Total'],
+          services: ['Pengecekan', 'Perbaikan Sparepart', 'Isi Refrigerant Full'],
+          techId: 'EMP-03',
+          status: 'PENDING_APPROVAL',
+          inspection: { ampere: 5.8, psi: 140, evap: 'CLEAN', drain: 'CLEAR', fan: 'FAULTY_REPLACED', cap: 'BLOWN_REPLACED' },
+          items: [
+            { type: 'SERVICE_LABOR', desc: 'Jasa Perbaikan Kelistrikan & Penggantian Motor Fan', qty: 1, price: 400000, cogs: 0 },
+            { type: 'SPAREPART', desc: 'Motor Fan Outdoor Original Mitsubishi + Kapasitor', qty: 1, price: 650000, cogs: 320000 }
+          ],
+          signedBy: 'dr. Hendrawan, Sp.PK',
+          makerUser: 'andi'
+        }
+      ],
+      transactions: [
+        {
+          id: 'TX-001',
+          ref: 'JRN-202610-00001',
+          date: '2026-10-01',
+          desc: 'Setoran Modal Awal & Persediaan Gudang Sparepart/Freon HVAC',
+          status: 'POSTED',
+          maker: 'system',
+          checker: 'admin',
+          lines: [
+            { code: '1110', memo: 'Setoran Kas Operasional Bank BCA', debit: 85000000, credit: 0 },
+            { code: '1130', memo: 'Stok Awal Freon R32/R410A & Kapasitor Gudang', debit: 25000000, credit: 0 },
+            { code: '1210', memo: 'Pembelian Manifold Digital, Pompa Vakum & Jet Cleaner', debit: 15000000, credit: 0 },
+            { code: '3110', memo: 'Modal Disetor Pemilik', debit: 0, credit: 125000000 }
+          ]
+        },
+        {
+          id: 'TX-002',
+          ref: 'JRN-202610-0001',
+          date: '2026-10-21',
+          desc: 'Posting Otomatis Invoice INV-202610-0001 — PT Graha Teknologi Nusantara',
+          status: 'POSTED',
+          maker: 'user',
+          checker: 'admin',
+          lines: [
+            { code: '1110', memo: 'Pelunasan Kas/Transfer INV-202610-0001', debit: 780000, credit: 0 },
+            { code: '4110', memo: 'Pendapatan Jasa Service AC (INV-202610-0001)', debit: 0, credit: 350000 },
+            { code: '4120', memo: 'Pendapatan Sparepart & Freon (INV-202610-0001)', debit: 0, credit: 430000 },
+            { code: '5110', memo: 'HPP Pemakaian Freon & Kapasitor', debit: 170000, credit: 0 },
+            { code: '1130', memo: 'Pengurangan Stok Gudang Sparepart', debit: 0, credit: 170000 },
+            { code: '5120', empId: 'EMP-02', memo: 'Beban Komisi Teknisi Budi Santoso (20% Jasa)', debit: 70000, credit: 0 },
+            { code: '2120', empId: 'EMP-02', memo: 'Utang Komisi Teknisi Budi Santoso', debit: 0, credit: 70000 }
+          ]
+        }
+      ],
+      auditLogs: [
+        {
+          time: '2026-10-01 08:00:12',
+          actor: 'admin (ADMIN)',
+          action: 'PERIOD_OPENED_AND_SEEDED',
+          detail: 'Financial Period 2026-10 initialized with Rp 125,000,000.0000 Equity',
+          hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
+        },
+        {
+          time: '2026-10-21 16:40:05',
+          actor: 'admin (ADMIN)',
+          action: 'JOURNAL_APPROVED_AND_POSTED',
+          detail: 'Approved INV-202610-0001 -> JRN-202610-0001 (Zero-Sum Verified: Rp 1,020,000.0000)',
+          hash: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a'
+        }
+      ]
+    };
+
+    // Simple deterministic hash simulator for audit chain
+    function computeAuditHash(str) {
+      let h1 = 0xdeadbeef ^ str.length, h2 = 0x41c6ce57 ^ str.length;
+      for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0') + '7c9e4a11b208f3d4e89102ab34cd56ef';
+    }
+
+    function appendAudit(action, detail) {
+      const prev = state.auditLogs[0]?.hash || 'GENESIS';
+      const actor = state.currentUser ? `${state.currentUser.username} (${state.currentUser.role})` : 'PUBLIC_CLIENT';
+      const time = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      const hash = computeAuditHash(prev + action + detail + time);
+      state.auditLogs.unshift({ time, actor, action, detail, hash });
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-950 border-emerald-500 text-emerald-100',
+        error: 'bg-rose-950 border-rose-500 text-rose-100',
+        info: 'bg-slate-900 border-cyan-400 text-cyan-100'
+      };
+      el.className = `pointer-events-auto p-4 rounded-xl border-l-4 shadow-2xl text-xs font-medium flex justify-between items-center gap-3 ${colors[type] || colors.info}`;
+      el.innerHTML = `<span>${message}</span><button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100">✕</button>`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }
+
+    // Session Persistence
+    function saveSession() {
+      if (state.currentUser) {
+        localStorage.setItem('aeroledger_session', JSON.stringify(state.currentUser));
+      } else {
+        localStorage.removeItem('aeroledger_session');
+      }
+      renderAuthHeader();
+    }
+
+    function renderAuthHeader() {
+      const badgeContainer = document.getElementById('roleBadgeContainer');
+      const btnLogin = document.getElementById('btnStaffLogin');
+      const btnLogout = document.getElementById('btnLogout');
+
+      if (!state.currentUser) {
+        badgeContainer.innerHTML = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-300 border border-slate-700">Role: PUBLIC GUEST</span>`;
+        btnLogin.classList.remove('hidden');
+        btnLogout.classList.add('hidden');
+      } else {
+        const badgeStyle = state.currentUser.role === 'ADMIN'
+          ? 'bg-amber-500/20 text-amber-300 border-amber-400/40'
+          : 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40';
+        badgeContainer.innerHTML = `
+          <span class="px-3 py-1 rounded-full text-[11px] font-bold border ${badgeStyle}">
+            ● ${state.currentUser.role}: ${state.currentUser.fullName}
+          </span>
+        `;
+        btnLogin.classList.add('hidden');
+        btnLogout.classList.remove('hidden');
+      }
+    }
+
+    function quickLogin(username, password) {
+      if (username === 'user' && password === 'user') {
+        const tech = state.employees.find(e => e.username === 'user');
+        if (tech.status !== 'ACTIVE') {
+          showToast(`Login ditolak: Akun ${tech.fullName} berstatus ${tech.status}`, 'error');
+          return;
+        }
+        state.currentUser = { username: 'user', role: 'TECHNICIAN', fullName: tech.fullName, empId: tech.id };
+        saveSession();
+        closeLoginModal();
+        switchPortalView('TECHNICIAN');
+        appendAudit('USER_SESSION_LOGIN', `Technician ${tech.fullName} logged into Field Service Workspace`);
+        showToast(`Selamat datang, ${tech.fullName} (Role: TECHNICIAN)`);
+      } else if (username === 'admin' && password === 'admin') {
+        const adm = state.employees.find(e => e.username === 'admin');
+        state.currentUser = { username: 'admin', role: 'ADMIN', fullName: adm.fullName, empId: adm.id };
+        saveSession();
+        closeLoginModal();
+        switchPortalView('ADMIN');
+        appendAudit('USER_SESSION_LOGIN', `Admin/Finance ${adm.fullName} logged into Executive & GL Portal`);
+        showToast(`Selamat datang, ${adm.fullName} (Role: ADMIN & FINANCE)`);
+      } else {
+        showToast('Kredensial tidak valid! Gunakan user/user atau admin/admin.', 'error');
+      }
+    }
+
+    function handleLogout() {
+      appendAudit('USER_SESSION_LOGOUT', `User ${state.currentUser?.username} terminated session`);
+      state.currentUser = null;
+      saveSession();
+      switchPortalView('PUBLIC');
+      showToast('Anda telah keluar dari sesi.', 'info');
+    }
+
+    function openLoginModal() { document.getElementById('modalLogin').classList.remove('hidden'); }
+    function closeLoginModal() { document.getElementById('modalLogin').classList.add('hidden'); }
+    function submitLoginForm(e) {
+      e.preventDefault();
+      quickLogin(
+        document.getElementById('loginUsername').value.trim(),
+        document.getElementById('loginPassword').value.trim()
+      );
+    }
+
+    // Portal View Router with RBAC Guard
+    function switchPortalView(view) {
+      if (view === 'TECHNICIAN' && (!state.currentUser || !['TECHNICIAN', 'ADMIN'].includes(state.currentUser.role))) {
+        showToast('Akses RBAC Ditolak: Silakan login sebagai Teknisi (user/user).', 'error');
+        openLoginModal();
+        return;
+      }
+      if (view === 'ADMIN' && (!state.currentUser || !['ADMIN', 'FINANCE'].includes(state.currentUser.role))) {
+        showToast('Akses RBAC Ditolak: Halaman ini membutuhkan hak akses ADMIN / FINANCE (admin/admin).', 'error');
+        openLoginModal();
+        return;
+      }
+
+      document.getElementById('viewPublic').classList.toggle('hidden', view !== 'PUBLIC');
+      document.getElementById('viewTechnician').classList.toggle('hidden', view !== 'TECHNICIAN');
+      document.getElementById('viewAdmin').classList.toggle('hidden', view !== 'ADMIN');
+
+      if (view === 'TECHNICIAN') renderTechnicianWorkspace();
+      if (view === 'ADMIN') renderAdminDashboard();
+    }
+
+    // Multi-step Public Booking Wizard
+    function goBookingStep(step) {
+      [1, 2, 3].forEach(s => {
+        document.getElementById('bookingStep' + s).classList.toggle('hidden', s !== step);
+        const ind = document.getElementById('stepIndicator' + s);
+        ind.className = s === step
+          ? 'px-2.5 py-1 rounded-full bg-blue-600 text-white'
+          : 'px-2.5 py-1 rounded-full bg-slate-100 text-slate-600';
+      });
+    }
+
+    function submitPublicBooking(e) {
+      e.preventDefault();
+      const symptoms = Array.from(document.querySelectorAll('input[name="bkSymptom"]:checked')).map(i => i.value);
+      const services = Array.from(document.querySelectorAll('input[name="bkService"]:checked')).map(i => i.value);
+      const nextNum = (state.orders.length + 1).toString().padStart(4, '0');
+      const newOrderId = `ORD-202610-${nextNum}`;
+
+      const newOrder = {
+        id: newOrderId,
+        invoiceNumber: null,
+        clientName: document.getElementById('bkClientName').value.trim(),
+        clientPhone: document.getElementById('bkClientPhone').value.trim(),
+        clientAddress: document.getElementById('bkClientAddress').value.trim(),
+        roomLocation: document.getElementById('bkRoomLocation').value.trim(),
+        acBrand: document.getElementById('bkAcBrand').value,
+        acPk: document.getElementById('bkAcPk').value,
+        acModel: document.getElementById('bkAcModel').value,
+        acFreon: document.getElementById('bkAcFreon').value,
+        symptoms: symptoms.length ? symptoms : ['Tidak Dingin'],
+        services: services.length ? services : ['Pengecekan'],
+        techId: 'EMP-02',
+        status: 'IN_PROGRESS',
+        inspection: { ampere: 4.0, psi: 140, evap: 'DIRTY_CLEANED', drain: 'CLEAR', fan: 'NORMAL', cap: 'GOOD' },
+        items: [
+          { type: 'SERVICE_LABOR', desc: `Jasa ${services.join(', ') || 'Service AC'} (${document.getElementById('bkAcBrand').value} ${document.getElementById('bkAcPk').value})`, qty: 1, price: 250000, cogs: 0 }
+        ],
+        signedBy: null,
+        makerUser: null
+      };
+
+      state.orders.unshift(newOrder);
+      state.activeTechOrderId = newOrderId;
+      appendAudit('ORDER_CREATED_PUBLIC', `New HVAC Service Order ${newOrderId} created for ${newOrder.clientName}`);
+      showToast(`Tiket ${newOrderId} berhasil dibuat & langsung ditugaskan ke antrean Teknisi!`);
+      e.target.reset();
+      goBookingStep(1);
+    }
+
+    // =========================================================================
+    // TECHNICIAN WORKSPACE LOGIC
+    // =========================================================================
+    function calcOrderFinancials(order) {
+      const labor = order.items.filter(i => i.type === 'SERVICE_LABOR').reduce((s, i) => s + i.qty * i.price, 0);
+      const parts = order.items.filter(i => i.type !== 'SERVICE_LABOR').reduce((s, i) => s + i.qty * i.price, 0);
+      const cogs = order.items.filter(i => i.type !== 'SERVICE_LABOR').reduce((s, i) => s + i.qty * i.cogs, 0);
+      const tech = state.employees.find(e => e.id === order.techId);
+      let commission = 0;
+      if (tech) {
+        commission = tech.commScheme === 'PERCENTAGE' ? (labor * tech.commValue) / 100 : tech.commValue;
+      }
+      return { labor, parts, cogs, grandTotal: labor + parts, commission };
+    }
+
+    function renderTechnicianWorkspace() {
+      const listEl = document.getElementById('techOrderList');
+      listEl.innerHTML = state.orders.map(o => {
+        const isSelected = o.id === state.activeTechOrderId;
+        const statusColors = {
+          IN_PROGRESS: 'bg-amber-100 text-amber-800',
+          PENDING_APPROVAL: 'bg-purple-100 text-purple-800',
+          COMPLETED_POSTED: 'bg-emerald-100 text-emerald-800'
+        };
+        return `
+          <div onclick="selectTechOrder('${o.id}')" class="p-4 rounded-xl border cursor-pointer transition ${isSelected ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'}">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-mono text-xs font-bold text-slate-800">${o.id}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded ${statusColors[o.status]}">${o.status}</span>
+            </div>
+            <div class="font-bold text-sm text-slate-900">${o.clientName}</div>
+            <div class="text-xs text-slate-500">${o.acBrand} • ${o.acPk} • ${o.acModel} (${o.acFreon})</div>
+            <div class="text-[11px] text-slate-600 mt-1">Keluhan: ${o.symptoms.join(', ')}</div>
+          </div>
+        `;
+      }).join('');
+
+      const active = state.orders.find(o => o.id === state.activeTechOrderId) || state.orders[0];
+      if (!active) return;
+
+      document.getElementById('activeOrderBadge').textContent = active.id;
+      document.getElementById('activeOrderTitle').textContent = `${active.clientName} — ${active.roomLocation}`;
+      document.getElementById('activeOrderMeta').textContent = `${active.clientAddress} | Unit: ${active.acBrand} ${active.acPk} (${active.acFreon}) | Layanan: ${active.services.join(', ')}`;
+
+      document.getElementById('inspAmpere').value = active.inspection.ampere;
+      document.getElementById('inspPsi').value = active.inspection.psi;
+      document.getElementById('inspEvap').value = active.inspection.evap;
+      document.getElementById('inspDrain').value = active.inspection.drain;
+      document.getElementById('inspFan').value = active.inspection.fan;
+      document.getElementById('inspCap').value = active.inspection.cap;
+
+      const isLocked = active.status !== 'IN_PROGRESS';
+      const tbody = document.getElementById('techInvoiceLinesBody');
+      tbody.innerHTML = active.items.map((item, idx) => `
+        <tr>
+          <td class="p-2">
+            <select ${isLocked ? 'disabled' : ''} onchange="updateTechLine(${idx}, 'type', this.value)" class="border rounded px-2 py-1 text-xs">
+              <option value="SERVICE_LABOR" ${item.type === 'SERVICE_LABOR' ? 'selected' : ''}>Jasa Service (4110)</option>
+              <option value="SPAREPART" ${item.type === 'SPAREPART' ? 'selected' : ''}>Sparepart (4120)</option>
+              <option value="REFRIGERANT_GAS" ${item.type === 'REFRIGERANT_GAS' ? 'selected' : ''}>Freon / Gas (4120)</option>
+            </select>
+          </td>
+          <td class="p-2">
+            <input ${isLocked ? 'disabled' : ''} value="${item.desc}" onchange="updateTechLine(${idx}, 'desc', this.value)" class="w-full border rounded px-2 py-1" />
+          </td>
+          <td class="p-2 text-right">
+            <input ${isLocked ? 'disabled' : ''} type="number" min="1" value="${item.qty}" onchange="updateTechLine(${idx}, 'qty', Number(this.value))" class="w-16 border rounded px-2 py-1 text-right font-mono" />
+          </td>
+          <td class="p-2 text-right">
+            <input ${isLocked ? 'disabled' : ''} type="number" step="5000" value="${item.price}" onchange="updateTechLine(${idx}, 'price', Number(this.value))" class="w-28 border rounded px-2 py-1 text-right font-mono" />
+          </td>
+          <td class="p-2 text-right">
+            <input ${isLocked || item.type === 'SERVICE_LABOR' ? 'disabled' : ''} type="number" step="5000" value="${item.cogs}" onchange="updateTechLine(${idx}, 'cogs', Number(this.value))" class="w-24 border rounded px-2 py-1 text-right font-mono bg-slate-50" />
+          </td>
+          <td class="p-2 text-right font-mono font-semibold">${fmtDec(item.qty * item.price)}</td>
+          <td class="p-2 text-center">
+            ${!isLocked && active.items.length > 1 ? `<button onclick="removeTechLine(${idx})" class="text-rose-600 font-bold">✕</button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+
+      const fin = calcOrderFinancials(active);
+      document.getElementById('lblTechLabor').textContent = fmtDec(fin.labor);
+      document.getElementById('lblTechParts').textContent = fmtDec(fin.parts);
+      document.getElementById('lblTechCommission').textContent = fmtDec(fin.commission);
+      document.getElementById('lblTechGrandTotal').textContent = fmtDec(fin.grandTotal);
+
+      const btnSign = document.getElementById('btnOpenSignModal');
+      if (isLocked) {
+        btnSign.disabled = true;
+        btnSign.textContent = `Tiket Sudah Disubmit (${active.status})`;
+        btnSign.className = 'px-5 py-2.5 rounded-xl bg-slate-300 text-slate-600 font-bold text-xs cursor-not-allowed';
+      } else {
+        btnSign.disabled = false;
+        btnSign.textContent = 'Tandai Selesai & Minta Persetujuan (Digital Sign-Off)';
+        btnSign.className = 'px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg transition';
+      }
+    }
+
+    function selectTechOrder(id) {
+      state.activeTechOrderId = id;
+      renderTechnicianWorkspace();
+    }
+
+    function updateTechLine(idx, field, val) {
+      const active = state.orders.find(o => o.id === state.activeTechOrderId);
+      if (!active) return;
+      active.items[idx][field] = val;
+      if (field === 'type' && val === 'SERVICE_LABOR') active.items[idx].cogs = 0;
+      renderTechnicianWorkspace();
+    }
+
+    function addTechInvoiceLine() {
+      const active = state.orders.find(o => o.id === state.activeTechOrderId);
+      if (!active || active.status !== 'IN_PROGRESS') return;
+      active.items.push({ type: 'SPAREPART', desc: 'Kapasitor Kompresor / Pipa Tembaga', qty: 1, price: 175000, cogs: 70000 });
+      renderTechnicianWorkspace();
+    }
+
+    function removeTechLine(idx) {
+      const active = state.orders.find(o => o.id === state.activeTechOrderId);
+      if (!active) return;
+      active.items.splice(idx, 1);
+      renderTechnicianWorkspace();
+    }
+
+    // Signature Pad Setup
+    let sigCanvas, sigCtx, isSigDrawing = false, hasSigned = false;
+    function initSignaturePad() {
+      sigCanvas = document.getElementById('sigCanvas');
+      sigCtx = sigCanvas.getContext('2d');
+      const start = (x, y) => {
+        sigCtx.strokeStyle = '#0f172a';
+        sigCtx.lineWidth = 2.2;
+        sigCtx.lineCap = 'round';
+        sigCtx.beginPath();
+        sigCtx.moveTo(x, y);
+        isSigDrawing = true;
+        hasSigned = true;
+      };
+      const move = (x, y) => {
+        if (!isSigDrawing) return;
+        sigCtx.lineTo(x, y);
+        sigCtx.stroke();
+      };
+      sigCanvas.addEventListener('mousedown', e => start(e.offsetX, e.offsetY));
+      sigCanvas.addEventListener('mousemove', e => move(e.offsetX, e.offsetY));
+      window.addEventListener('mouseup', () => { isSigDrawing = false; });
+    }
+
+    function clearSigCanvas() {
+      if (!sigCtx) return;
+      sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+      hasSigned = false;
+    }
+
+    function openSignatureModal() {
+      const active = state.orders.find(o => o.id === state.activeTechOrderId);
+      if (!active) return;
+      document.getElementById('sigClientNameInput').value = active.clientName;
+      clearSigCanvas();
+      document.getElementById('modalSignature').classList.remove('hidden');
+    }
+
+    function closeSignatureModal() {
+      document.getElementById('modalSignature').classList.add('hidden');
+    }
+
+    function confirmTechnicianSignOff() {
+      if (!hasSigned) {
+        showToast('Harap bubuhkan tanda tangan pelanggan pada kanvas terlebih dahulu.', 'error');
+        return;
+      }
+      const active = state.orders.find(o => o.id === state.activeTechOrderId);
+      active.inspection = {
+        ampere: Number(document.getElementById('inspAmpere').value),
+        psi: Number(document.getElementById('inspPsi').value),
+        evap: document.getElementById('inspEvap').value,
+        drain: document.getElementById('inspDrain').value,
+        fan: document.getElementById('inspFan').value,
+        cap: document.getElementById('inspCap').value
+      };
+      active.invoiceNumber = active.id.replace('ORD-', 'INV-');
+      active.status = 'PENDING_APPROVAL';
+      active.signedBy = document.getElementById('sigClientNameInput').value.trim();
+      active.makerUser = state.currentUser?.username || 'user';
+
+      const fin = calcOrderFinancials(active);
+      appendAudit(
+        'INVOICE_SUBMITTED_BY_MAKER',
+        `Technician submitted ${active.invoiceNumber} (${fmtDec(fin.grandTotal)}) signed by ${active.signedBy}`
+      );
+      closeSignatureModal();
+      renderTechnicianWorkspace();
+      showToast(`Invoice ${active.invoiceNumber} berhasil dibuat & dikirim ke antrean Maker-Checker Finance!`);
+    }
+
+    // =========================================================================
+    // ADMIN & FINANCE ENGINE (MAKER-CHECKER, DOUBLE-ENTRY GL, REPORTS, HR)
+    // =========================================================================
+    function switchAdminTab(tab) {
+      ['OVERVIEW', 'LEDGER', 'REPORTS', 'HR', 'AUDIT'].forEach(t => {
+        document.getElementById('adminSection' + t).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById('admTab' + t);
+        btn.className = t === tab
+          ? 'px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white'
+          : 'px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100';
+      });
+      renderAdminDashboard();
+    }
+
+    function computeFinancialAggregates() {
+      const balances = {};
+      Object.keys(COA).forEach(code => { balances[code] = 0; });
+
+      let totalPostedDebit = 0;
+      let totalPostedCredit = 0;
+
+      state.transactions.filter(t => t.status === 'POSTED').forEach(tx => {
+        tx.lines.forEach(l => {
+          totalPostedDebit += l.debit;
+          totalPostedCredit += l.credit;
+          const acct = COA[l.code];
+          if (acct.normal === 'DEBIT') {
+            balances[l.code] += (l.debit - l.credit);
+          } else {
+            balances[l.code] += (l.credit - l.debit);
+          }
+        });
+      });
+
+      const revService = balances['4110'];
+      const revParts = balances['4120'];
+      const totalRevenue = revService + revParts;
+      const cogsParts = balances['5110'];
+      const expComm = balances['5120'];
+      const totalDirectCost = cogsParts + expComm;
+      const grossProfit = totalRevenue - totalDirectCost;
+      const opEx = balances['5210'];
+      const netProfit = grossProfit - opEx;
+
+      const totalAssets = balances['1110'] + balances['1120'] + balances['1130'] + balances['1210'];
+      const totalLiabilities = balances['2110'] + balances['2120'];
+      const totalEquity = balances['3110'] + netProfit;
+
+      return {
+        balances,
+        totalPostedDebit,
+        totalPostedCredit,
+        revService,
+        revParts,
+        totalRevenue,
+        cogsParts,
+        expComm,
+        grossProfit,
+        opEx,
+        netProfit,
+        totalAssets,
+        totalLiabilities,
+        totalEquity
+      };
+    }
+
+    function approveAndPostMakerInvoice(orderId) {
+      const order = state.orders.find(o => o.id === orderId);
+      if (!order || order.status !== 'PENDING_APPROVAL') return;
+
+      const fin = calcOrderFinancials(order);
+      const lines = [
+        { code: '1110', memo: `Penerimaan Kas Tagihan ${order.invoiceNumber} (${order.clientName})`, debit: fin.grandTotal, credit: 0 }
+      ];
+      if (fin.labor > 0) {
+        lines.push({ code: '4110', memo: `Pendapatan Jasa Service AC (${order.invoiceNumber})`, debit: 0, credit: fin.labor });
+      }
+      if (fin.parts > 0) {
+        lines.push({ code: '4120', memo: `Pendapatan Penjualan Sparepart & Freon (${order.invoiceNumber})`, debit: 0, credit: fin.parts });
+      }
+      if (fin.cogs > 0) {
+        lines.push({ code: '5110', memo: `HPP Sparepart & Freon (${order.invoiceNumber})`, debit: fin.cogs, credit: 0 });
+        lines.push({ code: '1130', memo: `Pengurangan Persediaan Gudang (${order.invoiceNumber})`, debit: 0, credit: fin.cogs });
+      }
+      if (fin.commission > 0) {
+        lines.push({ code: '5120', empId: order.techId, memo: `Beban Komisi Teknisi atas ${order.invoiceNumber}`, debit: fin.commission, credit: 0 });
+        lines.push({ code: '2120', empId: order.techId, memo: `Utang Komisi Teknisi atas ${order.invoiceNumber}`, debit: 0, credit: fin.commission });
+      }
+
+      // Mandatory Zero-Sum Verification: Sum(Debit) - Sum(Credit) = 0
+      const sumDebit = lines.reduce((s, l) => s + l.debit, 0);
+      const sumCredit = lines.reduce((s, l) => s + l.credit, 0);
+      if (Math.abs(sumDebit - sumCredit) > 0.0001) {
+        showToast('DOUBLE_ENTRY_IMBALANCE: Jurnal ditolak karena Debit != Credit!', 'error');
+        return;
+      }
+
+      const jrnRef = order.invoiceNumber.replace('INV-', 'JRN-');
+      state.transactions.unshift({
+        id: 'TX-' + Date.now(),
+        ref: jrnRef,
+        date: '2026-10-23',
+        desc: `Posting Otomatis Invoice ${order.invoiceNumber} — ${order.clientName} (${order.acBrand} ${order.acPk})`,
+        status: 'POSTED',
+        maker: order.makerUser || 'user',
+        checker: state.currentUser?.username || 'admin',
+        lines
+      });
+
+      order.status = 'COMPLETED_POSTED';
+      appendAudit(
+        'JOURNAL_APPROVED_AND_POSTED',
+        `Checker approved ${order.invoiceNumber} -> ${jrnRef} (Debit = Credit = ${fmtDec(sumDebit)})`
+      );
+      renderAdminDashboard();
+      showToast(`Jurnal ${jrnRef} berhasil diverifikasi (Zero-Sum = 0.0000) & diposting ke Buku Besar!`);
+    }
+
+    // Formal Reversing Entry (Jurnal Pembalik)
+    function reversePostedTransaction(txId) {
+      const orig = state.transactions.find(t => t.id === txId);
+      if (!orig || orig.status !== 'POSTED') return;
+      if (orig.ref === 'JRN-202610-00001') {
+        showToast('Jurnal Modal Awal Sistem tidak dapat dibalik pada mode demo.', 'error');
+        return;
+      }
+
+      const revRef = 'REV-' + orig.ref;
+      const mirrorLines = orig.lines.map(l => ({
+        code: l.code,
+        empId: l.empId,
+        memo: `[JURNAL PEMBALIK] ${l.memo}`,
+        debit: l.credit,
+        credit: l.debit
+      }));
+
+      orig.status = 'REVERSED';
+      state.transactions.unshift({
+        id: 'TX-REV-' + Date.now(),
+        ref: revRef,
+        date: '2026-10-23',
+        desc: `JURNAL PEMBALIK (Credit Note) atas ${orig.ref} — Koreksi Akuntansi Formal`,
+        status: 'POSTED',
+        maker: state.currentUser?.username || 'admin',
+        checker: state.currentUser?.username || 'admin',
+        lines: mirrorLines
+      });
+
+      appendAudit('JOURNAL_REVERSED_CREDIT_NOTE', `Issued formal Reversing Entry ${revRef} neutralizing ${orig.ref}`);
+      renderAdminDashboard();
+      showToast(`Jurnal Pembalik ${revRef} berhasil diterbitkan tanpa menghapus histori transaksi asli!`);
+    }
+
+    function renderAdminDashboard() {
+      const agg = computeFinancialAggregates();
+      const pendingOrders = state.orders.filter(o => o.status === 'PENDING_APPROVAL');
+
+      // 1. KPI Cards
+      const grossMarginPct = agg.totalRevenue > 0 ? ((agg.grossProfit / agg.totalRevenue) * 100).toFixed(2) : '0.00';
+      document.getElementById('kpiCardsContainer').innerHTML = `
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-semibold">Total Pendapatan (Posted)</div>
+          <div class="text-lg font-extrabold font-mono text-slate-900 mt-1">${fmtDec(agg.totalRevenue)}</div>
+          <div class="text-[11px] text-emerald-600 font-semibold mt-1">Jasa: ${fmtDec(agg.revService)}</div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-semibold">Laba Kotor (Gross Profit)</div>
+          <div class="text-lg font-extrabold font-mono text-emerald-700 mt-1">${fmtDec(agg.grossProfit)}</div>
+          <div class="text-[11px] text-slate-500 mt-1">Gross Margin: <span class="font-mono font-bold">${grossMarginPct}%</span></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-semibold">Saldo Kas & Bank (1110)</div>
+          <div class="text-lg font-extrabold font-mono text-blue-700 mt-1">${fmtDec(agg.balances['1110'])}</div>
+          <div class="text-[11px] text-slate-500 mt-1">Utang Komisi (2120): ${fmtDec(agg.balances['2120'])}</div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="text-xs text-slate-500 font-semibold">Antrean Maker-Checker</div>
+          <div class="text-2xl font-extrabold font-mono text-amber-600 mt-1">${pendingOrders.length} Invoice</div>
+          <div class="text-[11px] text-slate-500 mt-1">Menunggu otorisasi Checker</div>
+        </div>
+      `;
+
+      // 2. Maker-Checker Queue
+      const mcEl = document.getElementById('makerCheckerList');
+      if (pendingOrders.length === 0) {
+        mcEl.innerHTML = `<div class="p-6 text-center text-xs text-slate-400 border border-dashed rounded-xl">Seluruh invoice lapangan telah diverifikasi & diposting ke General Ledger.</div>`;
+      } else {
+        mcEl.innerHTML = pendingOrders.map(o => {
+          const fin = calcOrderFinancials(o);
+          return `
+            <div class="p-4 rounded-xl border border-amber-300 bg-amber-50/50 space-y-3">
+              <div class="flex flex-wrap justify-between items-start gap-2">
+                <div>
+                  <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-900">${o.invoiceNumber}</span>
+                  <h4 class="font-bold text-sm text-slate-900 mt-1">${o.clientName} (${o.acBrand} ${o.acPk})</h4>
+                  <p class="text-xs text-slate-600">Maker: <code class="font-mono">${o.makerUser}</code> | Ditandatangani oleh: <strong>${o.signedBy}</strong></p>
+                </div>
+                <div class="text-right font-mono">
+                  <div class="text-xs text-slate-500">Total Tagihan</div>
+                  <div class="text-sm font-extrabold text-slate-900">${fmtDec(fin.grandTotal)}</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-lg border text-[11px] font-mono space-y-1">
+                <div class="text-slate-500 font-sans font-semibold">Preview Jurnal Otomatis (Zero-Sum Checked):</div>
+                <div class="flex justify-between"><span>DR 1110 Kas & Bank Operasional</span><span>${fmtDec(fin.grandTotal)}</span></div>
+                <div class="flex justify-between text-slate-600"><span>  CR 4110 Pendapatan Jasa Service</span><span>${fmtDec(fin.labor)}</span></div>
+                ${fin.parts > 0 ? `<div class="flex justify-between text-slate-600"><span>  CR 4120 Pendapatan Sparepart</span><span>${fmtDec(fin.parts)}</span></div>` : ''}
+                ${fin.cogs > 0 ? `<div class="flex justify-between text-rose-700"><span>DR 5110 HPP Sparepart / CR 1130 Gudang</span><span>${fmtDec(fin.cogs)}</span></div>` : ''}
+                <div class="flex justify-between text-blue-700"><span>DR 5120 Beban Komisi / CR 2120 Utang Komisi</span><span>${fmtDec(fin.commission)}</span></div>
+              </div>
+              <div class="flex justify-end">
+                <button onclick="approveAndPostMakerInvoice('${o.id}')" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow">
+                  ✓ Setujui & Posting ke General Ledger (Checker)
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 3. Technician Productivity & Payroll Calculator
+      const techList = state.employees.filter(e => e.role === 'TECHNICIAN');
+      document.getElementById('techProductivityList').innerHTML = techList.map(t => {
+        const completed = state.orders.filter(o => o.techId === t.id && o.status === 'COMPLETED_POSTED');
+        const accruedComm = state.transactions
+          .filter(tx => tx.status === 'POSTED')
+          .flatMap(tx => tx.lines)
+          .filter(l => l.code === '2120' && l.empId === t.id)
+          .reduce((s, l) => s + (l.credit - l.debit), 0);
+        const pctProgress = Math.min(100, completed.length * 35);
+        return `
+          <div class="p-3.5 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex justify-between items-center">
+              <div>
+                <div class="font-bold text-sm text-slate-900">${t.fullName}</div>
+                <div class="text-[11px] text-slate-500">${t.specialization} (${t.commScheme === 'PERCENTAGE' ? t.commValue + '% Jasa' : fmtDec(t.commValue) + '/Job'})</div>
+              </div>
+              <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">${completed.length} Job Selesai</span>
+            </div>
+            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div class="bg-blue-600 h-full rounded-full" style="width:${pctProgress}%"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-1 text-xs font-mono">
+              <div class="bg-slate-50 p-2 rounded border">
+                <div class="text-[10px] font-sans text-slate-500">Komisi Terakru (GL 2120)</div>
+                <div class="font-bold text-blue-700">${fmtDec(accruedComm)}</div>
+              </div>
+              <div class="bg-slate-50 p-2 rounded border">
+                <div class="text-[10px] font-sans text-slate-500">Total Take-Home Pay</div>
+                <div class="font-bold text-emerald-700">${fmtDec(t.baseSalary + accruedComm)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 4. General Ledger Tab
+      const variance = agg.totalPostedDebit - agg.totalPostedCredit;
+      document.getElementById('glZeroSumBadge').textContent =
+        `∑ Debit (${fmtDec(agg.totalPostedDebit)}) - ∑ Credit (${fmtDec(agg.totalPostedCredit)}) = ${fmtDec(variance)}`;
+
+      document.getElementById('ledgerTransactionsContainer').innerHTML = state.transactions.map(tx => {
+        const txDebit = tx.lines.reduce((s, l) => s + l.debit, 0);
+        const txCredit = tx.lines.reduce((s, l) => s + l.credit, 0);
+        return `
+          <div class="border rounded-xl overflow-hidden">
+            <div class="bg-slate-900 text-white px-4 py-2.5 flex flex-wrap justify-between items-center gap-2 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-cyan-300">${tx.ref}</span>
+                <span>• ${tx.date} •</span>
+                <span class="font-semibold">${tx.desc}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-[11px] px-2 py-0.5 rounded ${tx.status === 'POSTED' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${tx.status}</span>
+                ${tx.status === 'POSTED' && !tx.ref.startsWith('REV-') && tx.ref !== 'JRN-202610-00001'
+                  ? `<button onclick="reversePostedTransaction('${tx.id}')" class="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-semibold text-[11px]">Buat Jurnal Pembalik (Reverse)</button>`
+                  : ''}
+              </div>
+            </div>
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 text-slate-500">
+                <tr>
+                  <th class="p-2 text-left">Kode Akun</th>
+                  <th class="p-2 text-left">Nama Akun & Memo</th>
+                  <th class="p-2 text-right">Debit (IDR)</th>
+                  <th class="p-2 text-right">Credit (IDR)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y font-mono">
+                ${tx.lines.map(l => `
+                  <tr>
+                    <td class="p-2 font-bold">${l.code}</td>
+                    <td class="p-2 font-sans">${COA[l.code]?.name || ''} — <span class="text-slate-500">${l.memo}</span></td>
+                    <td class="p-2 text-right ${l.debit > 0 ? 'text-slate-900 font-semibold' : 'text-slate-300'}">${fmtDec(l.debit)}</td>
+                    <td class="p-2 text-right ${l.credit > 0 ? 'text-slate-900 font-semibold' : 'text-slate-300'}">${fmtDec(l.credit)}</td>
+                  </tr>
+                `).join('')}
+                <tr class="bg-slate-100 font-bold">
+                  <td colspan="2" class="p-2 text-right font-sans">Total Baris Jurnal (Zero-Sum Check):</td>
+                  <td class="p-2 text-right text-emerald-700">${fmtDec(txDebit)}</td>
+                  <td class="p-2 text-right text-emerald-700">${fmtDec(txCredit)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+      }).join('');
+
+      // 5. Financial Reports Tab
+      document.getElementById('reportIncomeStatement').innerHTML = `
+        <div class="flex justify-between"><span>4110 - Pendapatan Jasa Service</span><span class="font-mono">${fmtDec(agg.revService)}</span></div>
+        <div class="flex justify-between"><span>4120 - Pendapatan Sparepart & Freon</span><span class="font-mono">${fmtDec(agg.revParts)}</span></div>
+        <div class="flex justify-between font-bold border-t pt-1"><span>Total Pendapatan Kotor</span><span class="font-mono">${fmtDec(agg.totalRevenue)}</span></div>
+        <div class="flex justify-between text-rose-700 pt-2"><span>5110 - HPP Sparepart & Freon</span><span class="font-mono">(${fmtDec(agg.cogsParts)})</span></div>
+        <div class="flex justify-between text-rose-700"><span>5120 - Beban Komisi Teknisi</span><span class="font-mono">(${fmtDec(agg.expComm)})</span></div>
+        <div class="flex justify-between font-bold border-t pt-1 text-emerald-700"><span>Laba Kotor (Gross Profit)</span><span class="font-mono">${fmtDec(agg.grossProfit)}</span></div>
+        <div class="flex justify-between text-slate-600 pt-2"><span>5210 - Beban Operasional & Gaji</span><span class="font-mono">(${fmtDec(agg.opEx)})</span></div>
+        <div class="flex justify-between font-extrabold text-sm border-t-2 border-slate-900 pt-2"><span>Laba Bersih (Net Profit)</span><span class="font-mono text-emerald-700">${fmtDec(agg.netProfit)}</span></div>
+      `;
+
+      document.getElementById('reportBalanceSheet').innerHTML = `
+        <div class="font-bold text-slate-700">ASET (ASSETS)</div>
+        <div class="flex justify-between"><span>1110 - Kas & Bank BCA</span><span class="font-mono">${fmtDec(agg.balances['1110'])}</span></div>
+        <div class="flex justify-between"><span>1130 - Persediaan Sparepart & Freon</span><span class="font-mono">${fmtDec(agg.balances['1130'])}</span></div>
+        <div class="flex justify-between"><span>1210 - Peralatan Kerja HVAC</span><span class="font-mono">${fmtDec(agg.balances['1210'])}</span></div>
+        <div class="flex justify-between font-bold border-t pt-1"><span>Total Aset</span><span class="font-mono text-blue-700">${fmtDec(agg.totalAssets)}</span></div>
+        <div class="font-bold text-slate-700 pt-2">LIABILITAS & EKUITAS</div>
+        <div class="flex justify-between"><span>2120 - Utang Komisi Teknisi</span><span class="font-mono">${fmtDec(agg.balances['2120'])}</span></div>
+        <div class="flex justify-between"><span>3110 - Modal Disetor Pemilik</span><span class="font-mono">${fmtDec(agg.balances['3110'])}</span></div>
+        <div class="flex justify-between"><span>3999 - Laba Tahun Berjalan</span><span class="font-mono">${fmtDec(agg.netProfit)}</span></div>
+        <div class="flex justify-between font-extrabold text-sm border-t-2 border-slate-900 pt-2"><span>Total Liabilitas + Ekuitas</span><span class="font-mono text-emerald-700">${fmtDec(agg.totalLiabilities + agg.totalEquity)}</span></div>
+      `;
+
+      const operatingCashIn = agg.balances['1110'] - 85000000;
+      document.getElementById('reportCashFlow').innerHTML = `
+        <div class="font-bold text-slate-700">ARUS KAS OPERASI (OPERATING)</div>
+        <div class="flex justify-between"><span>Penerimaan Kas Pelanggan Service</span><span class="font-mono text-emerald-700">${fmtDec(operatingCashIn)}</span></div>
+        <div class="font-bold text-slate-700 pt-2">ARUS KAS INVESTASI (INVESTING)</div>
+        <div class="flex justify-between"><span>Pembelian Peralatan Kerja & Gudang</span><span class="font-mono text-rose-700">(${fmtDec(40000000)})</span></div>
+        <div class="font-bold text-slate-700 pt-2">ARUS KAS PENDANAAN (FINANCING)</div>
+        <div class="flex justify-between"><span>Setoran Modal Pemilik</span><span class="font-mono text-emerald-700">${fmtDec(125000000)}</span></div>
+        <div class="flex justify-between font-extrabold text-sm border-t-2 border-slate-900 pt-2"><span>Saldo Akhir Kas (Akun 1110)</span><span class="font-mono text-blue-700">${fmtDec(agg.balances['1110'])}</span></div>
+      `;
+
+      renderHRTable();
+      renderAuditTable();
+    }
+
+    function renderHRTable() {
+      const filter = document.getElementById('hrRoleFilter').value;
+      const rows = state.employees.filter(e => filter === 'ALL' || e.role === filter);
+      document.getElementById('hrEmployeesTableBody').innerHTML = rows.map(e => `
+        <tr>
+          <td class="p-3">
+            <div class="font-mono text-[11px] text-slate-500">${e.code}</div>
+            <div class="font-bold text-slate-900">${e.fullName}</div>
+            <div class="text-slate-500">${e.email} • ${e.phone}</div>
+          </td>
+          <td class="p-3">
+            <span class="font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800">${e.role}</span>
+            <div class="text-slate-600 mt-1">${e.specialization}</div>
+          </td>
+          <td class="p-3 font-mono">
+            <div>Gaji: ${fmtDec(e.baseSalary)}</div>
+            <div class="text-blue-700 font-semibold">Komisi: ${e.commScheme === 'PERCENTAGE' ? e.commValue + '% / Job' : fmtDec(e.commValue) + ' Flat'}</div>
+          </td>
+          <td class="p-3 font-mono text-[11px]">
+            <div>DR: ${e.expAcct} (Beban)</div>
+            <div>CR: ${e.payAcct} (Utang Gaji)</div>
+          </td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold ${e.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${e.status}</span>
+          </td>
+          <td class="p-3 text-right space-x-1">
+            <button onclick="toggleEmpStatus('${e.id}')" class="px-2.5 py-1 rounded border text-[11px] font-semibold hover:bg-slate-100">
+              ${e.status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan'}
+            </button>
+            <button onclick="resetEmpPassword('${e.id}')" class="px-2.5 py-1 rounded bg-slate-900 text-white text-[11px] font-semibold">
+              Reset Pass
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleEmpStatus(empId) {
+      const emp = state.employees.find(e => e.id === empId);
+      if (!emp) return;
+      emp.status = emp.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+      appendAudit('EMPLOYEE_STATUS_CHANGED', `Updated ${emp.code} (${emp.fullName}) status to ${emp.status}`);
+      renderHRTable();
+      showToast(`Status kepegawaian ${emp.fullName} diubah menjadi ${emp.status}.`);
+    }
+
+    function resetEmpPassword(empId) {
+      const emp = state.employees.find(e => e.id === empId);
+      if (!emp) return;
+      const tempPass = 'Hvac#' + Math.random().toString(36).slice(2, 7).toUpperCase() + '!9';
+      appendAudit('EMPLOYEE_PASSWORD_RESET', `Issued one-time temporary credentials for ${emp.code}`);
+      showToast(`Temporary Password untuk ${emp.fullName}: ${tempPass} (Wajib ganti saat login pertama)`, 'info');
+    }
+
+    function openEmployeeModal() { document.getElementById('modalEmployee').classList.remove('hidden'); }
+    function closeEmployeeModal() { document.getElementById('modalEmployee').classList.add('hidden'); }
+
+    function submitNewEmployee(e) {
+      e.preventDefault();
+      const nextIdx = (state.employees.length + 1).toString().padStart(4, '0');
+      const code = `EMP-2026-${nextIdx}`;
+      const fullName = document.getElementById('empFullName').value.trim();
+      const role = document.getElementById('empRole').value;
+      const newEmp = {
+        id: 'EMP-' + Date.now(),
+        code,
+        username: fullName.toLowerCase().split(' ')[0],
+        fullName,
+        email: document.getElementById('empEmail').value.trim(),
+        phone: document.getElementById('empPhone').value.trim(),
+        role,
+        specialization: document.getElementById('empSpec').value.trim(),
+        status: document.getElementById('empStatus').value,
+        baseSalary: Number(document.getElementById('empBaseSalary').value),
+        commScheme: document.getElementById('empCommScheme').value,
+        commValue: Number(document.getElementById('empCommValue').value),
+        expAcct: role === 'TECHNICIAN' ? '5120' : '5210',
+        payAcct: '2120'
+      };
+      state.employees.push(newEmp);
+      const tempPass = 'Hvac#' + Math.random().toString(36).slice(2, 7).toUpperCase() + '!9';
+      appendAudit('EMPLOYEE_ONBOARDED', `Onboarded ${code} (${fullName}) bound to COA ${newEmp.expAcct}/${newEmp.payAcct}`);
+      closeEmployeeModal();
+      renderAdminDashboard();
+      showToast(`Pegawai ${fullName} (${code}) berhasil dibuat! Temp Password: ${tempPass}`);
+    }
+
+    function renderAuditTable() {
+      document.getElementById('auditLogsTableBody').innerHTML = state.auditLogs.map(a => `
+        <tr>
+          <td class="p-3 whitespace-nowrap">${a.time}</td>
+          <td class="p-3 font-bold text-slate-800">${a.actor}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-900 font-bold">${a.action}</span></td>
+          <td class="p-3 font-sans text-xs text-slate-700">${a.detail}</td>
+          <td class="p-3 text-slate-400">${a.hash.slice(0, 24)}...</td>
+        </tr>
+      `).join('');
+    }
+
+    // Initialize Application
+    window.addEventListener('DOMContentLoaded', () => {
+      initSignaturePad();
+      const saved = localStorage.getItem('aeroledger_session');
+      if (saved) {
+        try { state.currentUser = JSON.parse(saved); } catch (_) {}
+      }
+      renderAuthHeader();
+    });
+  </script>
+</body>
+</html>
